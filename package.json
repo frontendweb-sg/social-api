@@ -5,6 +5,7 @@
 	"main": "index.js",
 	"scripts": {
 		"start": "ts-node src/index.ts",
+		"build": "ts-node src/index.ts",
 		"dev": "set NODE_ENV=development&&ts-node-dev src/index.ts",
 		"prepare": "husky"
 	},
