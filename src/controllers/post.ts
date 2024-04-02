@@ -29,6 +29,7 @@ const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 		next(error);
 	}
 };
+
 /**
  *
  * @param req
