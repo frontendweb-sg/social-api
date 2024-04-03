@@ -1,22 +1,26 @@
-import { regExp } from "./regex";
+import {regExp} from './regex';
 
-export const slug = (title: string) => title.replace(/\s+/g, "-").toLowerCase();
+export const slug = (title: string) => title.replace(/\s+/g, '-').toLowerCase();
 
 export const tokenExpireDate = (time: number = 1): Date => {
-  const date = new Date(Date.now());
-  date.setHours(date.getHours() + time);
-  return date;
+	const date = new Date(Date.now());
+	date.setHours(date.getHours() + time);
+	return date;
 };
 
 // file filter
 export const filterFile = (req: Request, file: any, cb: Function) => {
-  if (!file.originalname.match(regExp.imgReg)) {
-    return cb(
-      new Error("Please upload file in these formats (jpe?g|png|giff|jfif|pmp)")
-    );
-  }
+	if (!file.originalname.match(regExp.imgReg)) {
+		return cb(
+			new Error(
+				'Please upload file in these formats (jpe?g|png|giff|jfif|pmp)',
+			),
+		);
+	}
 
-  return cb(null, true);
+	return cb(null, true);
 };
 
-export const whitelist = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+export const whitelist = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+export const prefixImgDir = (img: string) =>
+	`${process.env.BASE_URL}/uploads/post/${img}`;

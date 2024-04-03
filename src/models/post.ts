@@ -1,12 +1,9 @@
 import mongoose, {Schema, Document} from 'mongoose';
 import {USER_TABLE} from './user';
+import {PostStatus, Status} from '../utils/enum';
 
 export const POST_TABLE = 'Post';
-export enum Status {
-	Approved = 'approved',
-	Rejected = 'rejected',
-	Pending = 'pending',
-}
+
 export interface ILike {
 	user: Schema.Types.ObjectId;
 	active: boolean;
@@ -24,6 +21,7 @@ export interface IFriends {
 	status: Status;
 	createdAt?: Date;
 }
+
 export interface IPost {
 	user: Schema.Types.ObjectId;
 	content: string;
@@ -36,6 +34,7 @@ export interface IPost {
 	tags: string[];
 	status: Status;
 	friendRequests: IFriends[];
+	postStatus: PostStatus;
 }
 export interface IPostDoc extends Document<IPost>, IPost {}
 const schema = new Schema(
@@ -48,6 +47,7 @@ const schema = new Schema(
 		active: {type: Boolean, default: true},
 		tags: {type: [String], default: []},
 		status: {type: String, default: Status.Approved, enum: Status},
+		postStatus: {type: String, default: PostStatus.Public, enum: PostStatus},
 		comments: [
 			{
 				user: {type: Schema.Types.ObjectId, ref: USER_TABLE},
