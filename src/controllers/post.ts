@@ -14,7 +14,7 @@ import sharp from 'sharp';
  */
 const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const posts = (await Post.find().sort({
+		const posts = (await Post.find().populate('user').sort({
 			createdAt: -1,
 		})) as IPostDoc[];
 

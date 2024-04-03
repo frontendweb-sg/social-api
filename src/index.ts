@@ -16,7 +16,6 @@ app.use(express.urlencoded({extended: true}));
 
 app.use(cors());
 
-console.log(path.resolve(__dirname, 'uploads'));
 app.use(express.static('public'));
 app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
 
@@ -42,16 +41,7 @@ process.on('SIGINT', gracefulShutdown);
 process.on('SIGTERM', gracefulShutdown);
 
 function gracefulShutdown() {
-	console.log('Received shutdown signal. Closing server...');
-
-	// Close the server to stop accepting new connections
 	server.close(() => {
-		console.log('Server closed. Closing remaining connections...');
-
-		// Close remaining connections gracefully
-		// Additional cleanup tasks can be performed here
-
-		console.log('All connections closed. Exiting process.');
 		process.exit(0);
 	});
 }
