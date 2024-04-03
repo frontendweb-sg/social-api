@@ -6,10 +6,12 @@ import {
 	getPosts,
 	updatePost,
 } from '../controllers/post';
-import {body, check, query} from 'express-validator';
+import {body, check, query, validationResult} from 'express-validator';
 import {requestValidator} from '../middleware/request-validator';
 import {uploader} from '../utils/uploader';
 import {auth} from '../middleware/auth';
+import {addComment, deleteComment} from '../controllers/comments';
+import {addLike, removeLike} from '../controllers/likes';
 
 const route = Router();
 const upload = uploader('post');
@@ -27,6 +29,18 @@ route.post(
 	requestValidator,
 	addPost,
 );
+
+route.post(
+	'/:postId/comment',
+	auth,
+	upload.array('images', 5),
+	[body('message', 'Field is required!').notEmpty()],
+	requestValidator,
+	addComment,
+);
+route.put('/:postId/like', auth, addLike);
+route.put('/:postId/dislike', auth, removeLike);
+
 route.put(
 	'/:postId',
 	auth,
@@ -36,5 +50,5 @@ route.put(
 );
 
 route.delete('/:postId', auth, deletePost);
-
+route.delete('/:postId/comment/:commentId', auth, deleteComment);
 export {route as postRoute};

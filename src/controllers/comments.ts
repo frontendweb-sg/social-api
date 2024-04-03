@@ -1,7 +1,10 @@
 import {Request, Response, NextFunction} from 'express';
 import {User} from '../models/user';
-import {IPostDoc, Post} from '../models/post';
+import {IComment, IPostDoc, Post} from '../models/post';
 import {BadRequestError, NotFoundError} from '../errors';
+import {Status} from '../utils/enum';
+import {Schema} from 'mongoose';
+import {deleteFiles} from '../utils/uploader';
 
 /**
  * Add comment
@@ -17,6 +20,7 @@ export const addComment = async (
 	try {
 		const postId = req.params.postId;
 		const user = req.user?.id;
+		const body = req.body;
 
 		const post = (await Post.findById(postId)) as IPostDoc;
 
@@ -24,22 +28,31 @@ export const addComment = async (
 			throw new NotFoundError('Post not found!');
 		}
 
-		const {message} = req.body;
-		const status = message.includes('sex') ? 'rejected' : 'approved';
+		body.status = req.body.message.includes('sex')
+			? Status.Rejected
+			: Status.Approved;
+		body.user = user!;
+		const files = (req.files ?? []) as Express.Multer.File[];
+		if (files.length) {
+			body.images = (files ?? []).map(
+				(file: Express.Multer.File) => file.filename,
+			);
+		}
 
-		const result = await Post.findByIdAndUpdate(
-			postId,
+		const result = await Post.findOneAndUpdate(
+			{_id: postId},
 			{
-				$set: {
-					message,
-					user,
-					status,
+				$push: {
+					comments: req.body,
 				},
 			},
 			{new: true},
 		);
-		return res.status(201).json(result);
+		return res.status(201).json(result?.comments);
 	} catch (error) {
+		if (req.files?.length) {
+			deleteFiles(req.files['images' as keyof typeof req.file]);
+		}
 		next(error);
 	}
 };
@@ -74,13 +87,16 @@ export const deleteComment = async (
 		if (!userComments)
 			throw new BadRequestError('You can not other user comment');
 
-		const result = await Post.findOneAndUpdate(
+		await Post.findOneAndUpdate(
 			{_id: postId, comments: {$elemMatch: {_id: commentId, user: user}}},
 			{$pull: {comments: {_id: commentId}}},
 			{new: true},
 		);
 
-		return res.status(200).json(result);
+		return res.status(200).json({
+			commentId,
+			postId,
+		});
 	} catch (error) {
 		next(error);
 	}

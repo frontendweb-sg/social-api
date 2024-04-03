@@ -2,12 +2,16 @@ import {Request, Response, NextFunction} from 'express';
 
 import {ILike, IPostDoc, Post} from '../models/post';
 import {BadRequestError, NotFoundError} from '../errors';
-import {Schema} from 'mongoose';
+import mongoose, {ObjectId, Schema} from 'mongoose';
 
 /**
  * add comment
  */
-const addLike = async (req: Request, res: Response, next: NextFunction) => {
+export const addLike = async (
+	req: Request,
+	res: Response,
+	next: NextFunction,
+) => {
 	try {
 		const userId = req.user?.id; // userId
 		const postId = req.params.postId; // postId
@@ -28,13 +32,13 @@ const addLike = async (req: Request, res: Response, next: NextFunction) => {
 			updateLikes(post, userId!, true);
 		} else {
 			post.likes?.unshift({
-				user: new Schema.Types.ObjectId(userId!),
+				user: userId!,
 				active: true,
 			});
 		}
 
 		await post.save();
-		return res.status(201).send(post);
+		return res.status(200).send(post.likes);
 	} catch (err) {
 		throw next(err);
 	}
@@ -72,13 +76,13 @@ export const removeLike = async (
 			updateLikes(post, userId!, false);
 		} else {
 			post.likes?.unshift({
-				user: new Schema.Types.ObjectId(userId!),
+				user: userId!,
 				active: false,
 			});
 		}
 
 		await post.save();
-		return res.status(201).send(post);
+		return res.status(200).send(post.likes);
 	} catch (err) {
 		throw next(err);
 	}

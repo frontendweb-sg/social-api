@@ -19,7 +19,7 @@ const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 		})) as IPostDoc[];
 
 		const update = posts.map((post) => ({
-			...post,
+			...post.toJSON(),
 			id: post.id,
 			images: (post.images || []).map((img) => prefixImgDir(img)),
 		}));

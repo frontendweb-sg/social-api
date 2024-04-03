@@ -5,7 +5,7 @@ import {PostStatus, Status} from '../utils/enum';
 export const POST_TABLE = 'Post';
 
 export interface ILike {
-	user: Schema.Types.ObjectId;
+	user: string;
 	active: boolean;
 }
 
@@ -15,6 +15,7 @@ export interface IComment {
 	message: string;
 	status: Status;
 	createdAt?: Date;
+	images?: string[];
 }
 export interface IFriends {
 	user: Schema.Types.ObjectId;
@@ -52,6 +53,7 @@ const schema = new Schema(
 			{
 				user: {type: Schema.Types.ObjectId, ref: USER_TABLE},
 				message: {type: String, default: ''},
+				images: {type: [String], default: []},
 				status: {type: String, default: Status.Pending, enum: Status},
 				createdAt: {type: Date, default: Date.now()},
 			},
