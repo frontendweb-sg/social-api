@@ -3,6 +3,7 @@ import {Request} from 'express';
 import type {FileFilterCallback} from 'multer';
 import fs from 'fs';
 import path from 'path';
+import sharp from 'sharp';
 
 export const uploader = (
 	dir: string,
@@ -14,6 +15,7 @@ export const uploader = (
 ) => {
 	const storage = multer.diskStorage({
 		filename(req, file, cb) {
+			// sharp(file.filename).resize(400, 200);
 			const name =
 				req.user!.id +
 				'-' +

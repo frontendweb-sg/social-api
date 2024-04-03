@@ -5,7 +5,7 @@ import {IPostDoc, Post} from '../models/post';
 import {BadRequestError, NotFoundError} from '../errors';
 import {prefixImgDir, slug} from '../utils';
 import {deleteFile, deleteFiles} from '../utils/uploader';
-
+import sharp from 'sharp';
 /**
  * Get all posts
  * @param req
@@ -14,7 +14,9 @@ import {deleteFile, deleteFiles} from '../utils/uploader';
  */
 const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const posts = (await Post.find()) as IPostDoc[];
+		const posts = (await Post.find().sort({
+			createdAt: -1,
+		})) as IPostDoc[];
 
 		const update = posts.map((post) => ({
 			...post,
