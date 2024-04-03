@@ -60,7 +60,6 @@ const getPost = async (req: Request, res: Response, next: NextFunction) => {
  */
 const addPost = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		console.log(req.body, 'body');
 		const user = req.user;
 		const body = req.body;
 		body.slug = slug(body.title);
