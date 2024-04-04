@@ -1,5 +1,6 @@
 import {Request, Response, NextFunction} from 'express';
 import {Profile} from '../models/profile';
+import {NotFoundError} from '../errors';
 
 /**
  * Add education
@@ -46,6 +47,15 @@ export const updateEducation = async (
 		const profileId = req.params.profileId;
 		const educationId = req.params.educationId;
 
+		const education = await Profile.findOne({
+			user,
+			_id: profileId,
+			'education._id': educationId,
+		});
+
+		if (!education)
+			throw new NotFoundError('No data associated with ' + educationId);
+
 		const result = await Profile.findOneAndUpdate(
 			{user, _id: profileId, 'education._id': educationId},
 			{$set: {'education.$': req.body}},
@@ -74,6 +84,14 @@ export const deleteEducation = async (
 		const profileId = req.params.profileId;
 		const educationId = req.params.educationId;
 
+		const education = await Profile.findOne({
+			user,
+			_id: profileId,
+			'education._id': educationId,
+		});
+
+		if (!education)
+			throw new NotFoundError('No data associated with ' + educationId);
 		const result = await Profile.findOneAndUpdate(
 			{user, _id: profileId, 'education._id': educationId},
 			{
@@ -88,6 +106,7 @@ export const deleteEducation = async (
 
 		return res.status(200).json(result?.education);
 	} catch (error) {
+		console.log('e', error);
 		next(error);
 	}
 };

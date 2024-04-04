@@ -9,7 +9,6 @@ export const errorHandler = (
 	res: Response,
 	next: NextFunction,
 ) => {
-	console.log('E', error);
 	if (error instanceof MulterError) {
 		error = new BadRequestError('You can not upload more than 5 files.');
 	}
