@@ -1,5 +1,5 @@
 import {regExp} from './regex';
-
+import path from 'path';
 export const slug = (title: string) => title.replace(/\s+/g, '-').toLowerCase();
 
 export const tokenExpireDate = (time: number = 1): Date => {
@@ -22,5 +22,6 @@ export const filterFile = (req: Request, file: any, cb: Function) => {
 };
 
 export const whitelist = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
-export const prefixImgDir = (img: string) =>
-	`${process.env.BASE_URL}/uploads/post/${img}`;
+export const prefixImgDir = (img: string, dir: string = 'post') =>
+	`${process.env.BASE_URL}/uploads/${dir}/${img}`;
+export const hostPrefix = (image: string) => `${process.env.BASE_URL}/${image}`;

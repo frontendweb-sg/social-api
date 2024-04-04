@@ -7,17 +7,23 @@ import {connectDb} from './db';
 import {authRoute} from './routes/auth';
 import {errorHandler} from './middleware/error-handler';
 import {postRoute} from './routes/post';
+import {profileRoute} from './routes/profile';
+import {userRoute} from './routes/user';
+
 // app
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.set('title', 'shopkart-api');
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')));
+
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
+app.use(express.static('public'));
 
 app.use(cors());
-
-app.use(express.static('public'));
-app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
 
 app.use((req: Request, res: Response, next: NextFunction) => {
 	res.locals.baseUrl = process.env.BASE_URL;
@@ -27,6 +33,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // routes
 app.use('/api/auth', authRoute);
 app.use('/api/post', postRoute);
+app.use('/api/user', userRoute);
+app.use('/api/profile', profileRoute);
 
 // errors
 app.use(errorHandler);
