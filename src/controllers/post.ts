@@ -5,7 +5,7 @@ import {IPostDoc, Post} from '../models/post';
 import {BadRequestError, NotFoundError} from '../errors';
 import {prefixImgDir, slug} from '../utils';
 import {deleteFile, deleteFiles} from '../utils/uploader';
-import sharp from 'sharp';
+
 /**
  * Get all posts
  * @param req

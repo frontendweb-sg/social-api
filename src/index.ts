@@ -7,6 +7,7 @@ import {connectDb} from './db';
 import {authRoute} from './routes/auth';
 import {errorHandler} from './middleware/error-handler';
 import {postRoute} from './routes/post';
+import {profileRoute} from './routes/profile';
 // app
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +28,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // routes
 app.use('/api/auth', authRoute);
 app.use('/api/post', postRoute);
+app.use('/api/profile', profileRoute);
 
 // errors
 app.use(errorHandler);
