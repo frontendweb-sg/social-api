@@ -14,6 +14,7 @@ export const getProfile = async (
 		return res.status(200).json(profile);
 	} catch (error) {}
 };
+
 /**
  * Create user profile
  * @param req
@@ -122,8 +123,16 @@ export const updateEmployment = async (
 
 		const body = req.body;
 		const result = await Profile.findOneAndUpdate(
-			{user, _id: profileId, employment: {$elemMatch: {_id: employmentId}}},
-			{$set: body},
+			{
+				user,
+				_id: profileId,
+				'employment._id': employmentId,
+			},
+			{
+				$set: {
+					'employment.$': body,
+				},
+			},
 			{new: true},
 		);
 		return res.status(200).json(result);
