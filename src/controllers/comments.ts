@@ -23,7 +23,6 @@ export const addComment = async (
 		const body = req.body;
 
 		const post = (await Post.findById(postId)) as IPostDoc;
-
 		if (!post) {
 			throw new NotFoundError('Post not found!');
 		}
@@ -31,6 +30,7 @@ export const addComment = async (
 		body.status = req.body.message.includes('sex')
 			? Status.Rejected
 			: Status.Approved;
+
 		body.user = user!;
 		const files = (req.files ?? []) as Express.Multer.File[];
 		if (files.length) {

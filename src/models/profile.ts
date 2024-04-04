@@ -145,7 +145,7 @@ const schema = new Schema(
 		],
 		education: [
 			{
-				instituteName: {type: String},
+				instituteName: {type: String, required: true},
 				summary: {type: String, default: '', minlength: 0, maxlength: 500},
 				degree: {type: String},
 				fieldOfStudy: {type: String, default: ''},
