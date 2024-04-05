@@ -6,18 +6,24 @@ import {
 	getPosts,
 	updatePost,
 } from '../controllers/post';
-import {body, check, query, validationResult} from 'express-validator';
+import {body} from 'express-validator';
 import {requestValidator} from '../middleware/request-validator';
-import {uploader} from '../utils/uploader';
+// import {uploader} from '../utils/uploader';
+import {multerUploader} from '../utils/multer';
 import {auth} from '../middleware/auth';
 import {addComment, deleteComment} from '../controllers/comments';
 import {addLike, removeLike} from '../controllers/likes';
 
 const route = Router();
-const upload = uploader('post');
+const upload = multerUploader();
 
+// get all posts
 route.get('/', getPosts);
+
+// get posts by id
 route.get('/:postId', auth, getPost);
+
+// add post
 route.post(
 	'/',
 	auth,
@@ -33,7 +39,7 @@ route.post(
 route.post(
 	'/:postId/comment',
 	auth,
-	upload.array('images', 5),
+	upload.array('images', 2),
 	[body('message', 'Field is required!').notEmpty()],
 	requestValidator,
 	addComment,

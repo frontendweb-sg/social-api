@@ -25,7 +25,7 @@ export interface IFriends {
 }
 
 export interface IPost {
-	user: Schema.Types.ObjectId;
+	user: string;
 	content: string;
 	images: Media[];
 	code?: string;
@@ -45,8 +45,8 @@ const schema = new Schema(
 		content: {type: String, default: ''},
 		images: [
 			{
-				public_id: {type: String, required: true},
-				secure_url: {type: String, required: true},
+				public_id: {type: String},
+				url: {type: String, default: ''},
 				resource_type: {type: String, default: ''},
 				access_mode: {type: String, default: ''},
 				folder: {type: String, default: ''},
@@ -56,8 +56,8 @@ const schema = new Schema(
 		],
 		code: {type: String, default: ''},
 		videoUrl: {
-			public_id: {type: String, required: true},
-			secure_url: {type: String, required: true},
+			public_id: {type: String},
+			url: {type: String},
 			resource_type: {type: String, default: ''},
 			access_mode: {type: String, default: ''},
 			folder: {type: String, default: ''},

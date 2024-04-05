@@ -14,6 +14,13 @@ cloudinary.config({
 	secure: true,
 });
 
+/**
+ * Upload file
+ * @param filePath
+ * @param options
+ * @param callback
+ * @returns
+ */
 export const uploadFile = async (
 	filePath: string,
 	options?: UploadApiOptions,
@@ -26,6 +33,13 @@ export const uploadFile = async (
 	}
 };
 
+/**
+ * Delete upload file
+ * @param public_id
+ * @param options
+ * @param callback
+ * @returns
+ */
 export const deleteUploadFile = async (
 	public_id: string,
 	options?: {
@@ -36,13 +50,7 @@ export const deleteUploadFile = async (
 	callback?: ResponseCallback,
 ) => {
 	try {
-		const result = await cloudinary.uploader.destroy(
-			public_id,
-			options,
-			callback,
-		);
-		console.log(result, 'result delete', public_id);
-		return result;
+		return await cloudinary.uploader.destroy(public_id, options, callback);
 	} catch (error) {
 		throw error;
 	}

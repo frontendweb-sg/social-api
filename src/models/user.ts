@@ -28,7 +28,7 @@ const schema = new Schema(
 		mobile: {type: String, required: true, trim: true},
 		avatar: {
 			public_id: {type: String, required: true},
-			secure_url: {type: String, required: true},
+			url: {type: String, required: true},
 			resource_type: {type: String, default: ''},
 			access_mode: {type: String, default: ''},
 			folder: {type: String, default: ''},

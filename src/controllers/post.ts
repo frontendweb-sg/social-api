@@ -1,11 +1,19 @@
-import path from 'path';
 import mongoose from 'mongoose';
 import {Request, Response, NextFunction} from 'express';
-import {IPostDoc, Post} from '../models/post';
+import {IPost, IPostDoc, Post} from '../models/post';
 import {BadRequestError, NotFoundError} from '../errors';
-import {prefixImgDir, slug} from '../utils';
-import {deleteFile, deleteFiles} from '../utils/uploader';
+import {slug} from '../utils';
+import {deleteFiles} from '../utils/uploader';
+import {deleteUploadFile, uploadFile} from '../cloudinary';
+import {PostFileType} from '../types';
 
+const getFileObj = (files: any) =>
+	files
+		? {
+				images: files['images' as keyof typeof File] || [],
+				videoUrl: files['videoUrl' as keyof typeof File] || [],
+			}
+		: {images: [], videoUrl: []};
 /**
  * Get all posts
  * @param req
@@ -60,43 +68,70 @@ const getPost = async (req: Request, res: Response, next: NextFunction) => {
  * @param next
  */
 const addPost = async (req: Request, res: Response, next: NextFunction) => {
+	const body = req.body as IPost;
+	body.user = req.user?.id!;
+	const files: PostFileType = getFileObj(req.files);
+
+	let images = [];
+	if (files.images.length) {
+		for (let image of files.images) {
+			const file = await uploadFile(image.path, {
+				resource_type: 'image',
+				folder: 'post',
+				transformation: {width: 150, height: 150, crop: 'crop'},
+			});
+			images.push({
+				public_id: file.public_id,
+				url: file.secure_url,
+				resource_type: file.resource_type,
+				access_mode: file.access_mode,
+				folder: file.folder,
+				signature: file.signature,
+				version: file.version.toString(),
+			});
+		}
+	}
+
+	if (files.videoUrl.length) {
+		const video = files.videoUrl[0];
+		const file = await uploadFile(video.path, {
+			resource_type: 'video',
+			folder: 'post',
+			transformation: {width: 150, height: 150, crop: 'crop'},
+		});
+		body.videoUrl = {
+			public_id: file.public_id,
+			url: file.secure_url,
+			resource_type: file.resource_type,
+			access_mode: file.access_mode,
+			folder: file.folder,
+			signature: file.signature,
+			version: file.version.toString(),
+		};
+	}
+
+	body.images = images;
 	try {
-		const user = req.user;
-		const body = req.body;
-		body.user = user?.id;
-
-		const files: {
-			images: Express.Multer.File[];
-			videoUrl: Express.Multer.File[];
-		} = req.files
-			? {
-					images: req.files['images' as keyof typeof req.file] || [],
-					videoUrl: req.files['videoUrl' as keyof typeof req.file] || [],
-				}
-			: {
-					images: [],
-					videoUrl: [],
-				};
-
-		if (files.videoUrl.length) {
-			body.videoUrl = files.videoUrl[0].filename;
-		}
-
-		if (files.images.length) {
-			body.images = files.images.map((file) => file.filename);
-		}
-
 		const newPost = new Post(body);
 		const result = await newPost.save();
-
-		// result.images = result.images.map((img) => prefixImgDir(img));
-		// result.videoUrl = prefixImgDir(result.videoUrl!);
-		return res.status(201).json(body);
+		return res.status(201).json(result);
 	} catch (error) {
 		if (req.files !== undefined) {
-			deleteFiles(req.files['images' as keyof typeof req.file]);
-			deleteFile(req.files['videoUrl' as keyof typeof req.file]);
+			for (let image of body.images) {
+				await deleteUploadFile(image?.public_id, {
+					resource_type: image.resource_type,
+					type: image.access_mode,
+				});
+			}
+
+			if (body.videoUrl) {
+				await deleteUploadFile(body.videoUrl?.public_id, {
+					resource_type: body.videoUrl.resource_type,
+					type: body.videoUrl.access_mode,
+				});
+			}
 		}
+
 		next(error);
 	}
 };

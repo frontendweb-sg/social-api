@@ -39,16 +39,27 @@ export const updateAvatar = async (
 		const file = req.file as Express.Multer.File;
 		const user = (await User.findById(userId)) as IUser;
 
+		console.log(file);
 		if (!user) throw new NotFoundError('Invalid user id');
-
-		if (file.path) {
-			await deleteUploadFile(user.avatar.public_id);
+		if (file.path && user.avatar.public_id) {
+			await deleteUploadFile(user.avatar.public_id, {
+				resource_type: user.avatar.resource_type,
+				type: user.avatar.access_mode,
+			});
 		}
 
-		const cloudeData = await uploadFile(file.path);
+		const cloudeData = await uploadFile(file.path, {
+			folder: 'avatar',
+			resource_type: 'image',
+			transformation: {
+				width: 150,
+				height: 150,
+				crop: 'crop',
+			},
+		});
 		const data = {
 			public_id: cloudeData.public_id,
-			secure_url: cloudeData.secure_url,
+			url: cloudeData.secure_url,
 			resource_type: cloudeData.resource_type,
 			access_mode: cloudeData.access_mode,
 			folder: cloudeData.folder,
