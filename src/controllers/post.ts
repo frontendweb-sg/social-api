@@ -18,13 +18,13 @@ const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 			createdAt: -1,
 		})) as IPostDoc[];
 
-		const update = posts.map((post) => ({
-			...post.toJSON(),
-			id: post.id,
-			images: (post.images || []).map((img) => prefixImgDir(img)),
-		}));
+		// const update = posts.map((post) => ({
+		// 	...post.toJSON(),
+		// 	id: post.id,
+		// 	images: (post.images || []).map((img) => prefixImgDir(img)),
+		// }));
 
-		return res.status(200).json(update);
+		return res.status(200).json(posts);
 	} catch (error) {
 		next(error);
 	}
@@ -42,8 +42,8 @@ const getPost = async (req: Request, res: Response, next: NextFunction) => {
 
 		const post = (await Post.findById(postId).lean()) as IPostDoc;
 		if (!post) throw new NotFoundError('Post not found!');
-		post.images = post.images.map((img) => prefixImgDir(img));
-		post.videoUrl = prefixImgDir(post.videoUrl!);
+		// post.images = post.images.map((img) => prefixImgDir(img));
+		// post.videoUrl = prefixImgDir(post.videoUrl!);
 		return res.status(200).json(post);
 	} catch (error) {
 		if (error instanceof mongoose.MongooseError) {
@@ -89,8 +89,8 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 		const newPost = new Post(body);
 		const result = await newPost.save();
 
-		result.images = result.images.map((img) => prefixImgDir(img));
-		result.videoUrl = prefixImgDir(result.videoUrl!);
+		// result.images = result.images.map((img) => prefixImgDir(img));
+		// result.videoUrl = prefixImgDir(result.videoUrl!);
 		return res.status(201).json(body);
 	} catch (error) {
 		if (req.files !== undefined) {
@@ -133,8 +133,8 @@ const updatePost = async (req: Request, res: Response, next: NextFunction) => {
 			{$set: body},
 			{new: true},
 		)) as IPostDoc;
-		result.images = result?.images.map((img) => prefixImgDir(img));
-		result.videoUrl = prefixImgDir(result.videoUrl!);
+		// result.images = result?.images.map((img) => prefixImgDir(img));
+		// result.videoUrl = prefixImgDir(result.videoUrl!);
 		return res.status(200).json(result);
 	} catch (error) {
 		deleteFiles(req.files as Express.Multer.File[]);
@@ -155,12 +155,12 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
 		if (!post) throw new NotFoundError('Post not found!');
 
 		const result = await Post.findByIdAndDelete(postId);
-		if (result) {
-			const files = post.images.map((file) => ({
-				path: path.resolve(__dirname, '..', 'uploads', 'post', file),
-			}));
-			deleteFiles(files as Express.Multer.File[]);
-		}
+		// if (result) {
+		// 	const files = post.images.map((file) => ({
+		// 		path: path.resolve(__dirname, '..', 'uploads', 'post', file),
+		// 	}));
+		// 	deleteFiles(files as Express.Multer.File[]);
+		// }
 
 		return res.status(200).json({postId});
 	} catch (error) {

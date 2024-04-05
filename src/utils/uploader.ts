@@ -3,7 +3,6 @@ import {Request} from 'express';
 import type {FileFilterCallback} from 'multer';
 import fs from 'fs';
 import path from 'path';
-import sharp from 'sharp';
 
 export const uploader = (
 	dir: string,
@@ -15,7 +14,6 @@ export const uploader = (
 ) => {
 	const storage = multer.diskStorage({
 		filename(req, file, cb) {
-			// sharp(file.filename).resize(400, 200);
 			const name =
 				req.user!.id +
 				'-' +
@@ -25,7 +23,7 @@ export const uploader = (
 			cb(null, name);
 		},
 		destination(req, file, cb) {
-			const folder = path.resolve(__dirname, '..', 'uploads', dir);
+			const folder = `uploads/${dir}`;
 			if (!fs.existsSync(folder)) {
 				fs.mkdirSync(folder);
 			}
@@ -37,11 +35,10 @@ export const uploader = (
 };
 
 // delete file
-export const deleteFile = (file: Express.Multer.File) => {
-	if (fs.existsSync(file.path)) {
-		fs.unlink(file.path, (err: any) => {
-			if (err) new Error(err);
-		});
+export const deleteFile = (path: string) => {
+	if (fs.existsSync(path)) {
+		console.log('PATH', path);
+		fs.unlinkSync(path);
 	}
 };
 
