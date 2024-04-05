@@ -14,6 +14,7 @@ const getFileObj = (files: any) =>
 				videoUrl: files['videoUrl' as keyof typeof File] || [],
 			}
 		: {images: [], videoUrl: []};
+
 /**
  * Get all posts
  * @param req
@@ -25,13 +26,6 @@ const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 		const posts = (await Post.find().populate('user').sort({
 			createdAt: -1,
 		})) as IPostDoc[];
-
-		// const update = posts.map((post) => ({
-		// 	...post.toJSON(),
-		// 	id: post.id,
-		// 	images: (post.images || []).map((img) => prefixImgDir(img)),
-		// }));
-
 		return res.status(200).json(posts);
 	} catch (error) {
 		next(error);
@@ -47,11 +41,8 @@ const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 const getPost = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const {postId} = req.params;
-
 		const post = (await Post.findById(postId).lean()) as IPostDoc;
 		if (!post) throw new NotFoundError('Post not found!');
-		// post.images = post.images.map((img) => prefixImgDir(img));
-		// post.videoUrl = prefixImgDir(post.videoUrl!);
 		return res.status(200).json(post);
 	} catch (error) {
 		if (error instanceof mongoose.MongooseError) {
@@ -78,7 +69,7 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 			const file = await uploadFile(image.path, {
 				resource_type: 'image',
 				folder: 'post',
-				transformation: {width: 150, height: 150, crop: 'crop'},
+				transformation: {width: 450, height: 250, crop: 'crop'},
 			});
 			images.push({
 				public_id: file.public_id,
@@ -99,6 +90,7 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 			folder: 'post',
 			transformation: {width: 150, height: 150, crop: 'crop'},
 		});
+
 		body.videoUrl = {
 			public_id: file.public_id,
 			url: file.secure_url,
@@ -131,7 +123,6 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 				});
 			}
 		}
-
 		next(error);
 	}
 };
@@ -145,34 +136,20 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 const updatePost = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const {postId} = req.params;
-		const status = req.query.status;
-
-		if (status) {
-		}
+		const user = req.user;
+		const body = req.body;
+		body.user = user?.id;
 
 		const post = (await Post.findById(postId).lean()) as IPostDoc;
 		if (!post) throw new NotFoundError('Post not found!');
-
-		const user = req.user;
-		const body = req.body;
-		body.slug = slug(body.title);
-		body.user = user?.id;
-
-		const files = req.files as Express.Multer.File[];
-		if (files.length) {
-			body.images = files.map((file) => file.filename);
-		}
 
 		const result = (await Post.findByIdAndUpdate(
 			postId,
 			{$set: body},
 			{new: true},
 		)) as IPostDoc;
-		// result.images = result?.images.map((img) => prefixImgDir(img));
-		// result.videoUrl = prefixImgDir(result.videoUrl!);
 		return res.status(200).json(result);
 	} catch (error) {
-		deleteFiles(req.files as Express.Multer.File[]);
 		next(error);
 	}
 };
@@ -190,19 +167,26 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
 		if (!post) throw new NotFoundError('Post not found!');
 
 		const result = await Post.findByIdAndDelete(postId);
-		// if (result) {
-		// 	const files = post.images.map((file) => ({
-		// 		path: path.resolve(__dirname, '..', 'uploads', 'post', file),
-		// 	}));
-		// 	deleteFiles(files as Express.Multer.File[]);
-		// }
 
+		if (result) {
+			for (let image of post.images) {
+				await deleteUploadFile(image?.public_id, {
+					resource_type: image.resource_type,
+					type: image.access_mode,
+				});
+			}
+
+			if (post.videoUrl) {
+				await deleteUploadFile(post.videoUrl?.public_id, {
+					resource_type: post.videoUrl.resource_type,
+					type: post.videoUrl.access_mode,
+				});
+			}
+		}
 		return res.status(200).json({postId});
 	} catch (error) {
 		next(error);
 	}
 };
-
-const postActiveInactive = (status: string) => {};
 
 export {getPost, getPosts, addPost, updatePost, deletePost};
