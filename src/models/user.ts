@@ -25,7 +25,7 @@ const schema = new Schema(
 		name: {type: String, required: true, trim: true},
 		email: {type: String, unique: true, required: true, trim: true},
 		password: {type: String, required: true, trim: true},
-		mobile: {type: String, required: true, trim: true},
+		mobile: {type: String, required: true, trim: true, unique: true},
 		avatar: {
 			public_id: {type: String, required: true},
 			url: {type: String, required: true},
