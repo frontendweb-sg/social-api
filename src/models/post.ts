@@ -1,6 +1,7 @@
 import mongoose, {Schema, Document} from 'mongoose';
 import {USER_TABLE} from './user';
 import {PostStatus, Status} from '../utils/enum';
+import {Media} from '../types';
 
 export const POST_TABLE = 'Post';
 
@@ -24,11 +25,11 @@ export interface IFriends {
 }
 
 export interface IPost {
-	user: Schema.Types.ObjectId;
+	user: string;
 	content: string;
-	images: string[];
+	images: Media[];
 	code?: string;
-	videoUrl?: string;
+	videoUrl?: Media;
 	active: boolean;
 	comments: IComment[];
 	likes: ILike[];
@@ -42,9 +43,27 @@ const schema = new Schema(
 	{
 		user: {type: Schema.Types.ObjectId, required: true, ref: USER_TABLE},
 		content: {type: String, default: ''},
-		images: {type: [String], default: []},
 		code: {type: String, default: ''},
-		videoUrl: {type: String, default: ''},
+		images: [
+			{
+				public_id: {type: String, default: null},
+				url: {type: String, default: ''},
+				resource_type: {type: String, default: ''},
+				access_mode: {type: String, default: ''},
+				folder: {type: String, default: ''},
+				signature: {type: String, default: ''},
+				version: {type: String, default: ''},
+			},
+		],
+		videoUrl: {
+			public_id: {type: String, default: null},
+			url: {type: String, default: ''},
+			resource_type: {type: String, default: ''},
+			access_mode: {type: String, default: ''},
+			folder: {type: String, default: ''},
+			signature: {type: String, default: ''},
+			version: {type: String, default: ''},
+		},
 		active: {type: Boolean, default: true},
 		tags: {type: [String], default: []},
 		status: {type: String, default: Status.Approved, enum: Status},

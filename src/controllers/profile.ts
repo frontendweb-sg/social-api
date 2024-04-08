@@ -18,9 +18,7 @@ export const getLoggedInUser = async (
 	try {
 		const user = req.user?.id;
 		const result = await User.findById(user);
-		return res
-			.status(200)
-			.send({avatar: prefixImgDir(result?.avatar!, 'avatar')});
+		return res.status(200).send({avatar: result?.avatar});
 	} catch (error) {
 		next(error);
 	}

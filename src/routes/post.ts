@@ -8,13 +8,13 @@ import {
 } from '../controllers/post';
 import {body, check, query, validationResult} from 'express-validator';
 import {requestValidator} from '../middleware/request-validator';
-import {uploader} from '../utils/uploader';
+import {multerUploader} from '../utils/uploader';
 import {auth} from '../middleware/auth';
 import {addComment, deleteComment} from '../controllers/comments';
 import {addLike, removeLike} from '../controllers/likes';
 
 const route = Router();
-const upload = uploader('post');
+const upload = multerUploader();
 
 route.get('/', getPosts);
 route.get('/:postId', auth, getPost);
