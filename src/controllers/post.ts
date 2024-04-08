@@ -4,9 +4,18 @@ import {IPost, IPostDoc, Post} from '../models/post';
 import {BadRequestError, NotFoundError} from '../errors';
 import {slug} from '../utils';
 import {deleteFiles} from '../utils/uploader';
-import {deleteUploadFile, uploadFile} from '../cloudinary';
+import {deleteImage, deleteUploadFile, uploadImage} from '../cloudinary';
 import {PostFileType} from '../types';
+import {UploadApiOptions, UploadApiResponse} from 'cloudinary';
 
+const POST_OPTIONS: UploadApiOptions = {
+	folder: 'post',
+	transformation: {
+		width: 450,
+		height: 250,
+		crop: 'crop',
+	},
+};
 const getFileObj = (files: any) =>
 	files
 		? {
@@ -22,15 +31,12 @@ const getFileObj = (files: any) =>
  */
 const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 	try {
+		const page = req.query.page || 1;
+		const limit = req.query.limit || 10;
+
 		const posts = (await Post.find().populate('user').sort({
 			createdAt: -1,
 		})) as IPostDoc[];
-
-		// const update = posts.map((post) => ({
-		// 	...post.toJSON(),
-		// 	id: post.id,
-		// 	images: (post.images || []).map((img) => prefixImgDir(img)),
-		// }));
 
 		return res.status(200).json(posts);
 	} catch (error) {
@@ -50,8 +56,7 @@ const getPost = async (req: Request, res: Response, next: NextFunction) => {
 
 		const post = (await Post.findById(postId).lean()) as IPostDoc;
 		if (!post) throw new NotFoundError('Post not found!');
-		// post.images = post.images.map((img) => prefixImgDir(img));
-		// post.videoUrl = prefixImgDir(post.videoUrl!);
+
 		return res.status(200).json(post);
 	} catch (error) {
 		if (error instanceof mongoose.MongooseError) {
@@ -74,12 +79,11 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 
 	let images = [];
 	if (files.images.length) {
-		for (let image of files.images) {
-			const file = await uploadFile(image.path, {
-				resource_type: 'image',
-				folder: 'post',
-				transformation: {width: 150, height: 150, crop: 'crop'},
-			});
+		const allImages = files.images.map((image) =>
+			uploadImage(image.path, POST_OPTIONS),
+		);
+		const response = await Promise.all<UploadApiResponse>(allImages);
+		for (let file of response) {
 			images.push({
 				public_id: file.public_id,
 				url: file.secure_url,
@@ -94,10 +98,9 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 
 	if (files.videoUrl.length) {
 		const video = files.videoUrl[0];
-		const file = await uploadFile(video.path, {
+		const file = await uploadImage(video.path, {
 			resource_type: 'video',
-			folder: 'post',
-			transformation: {width: 150, height: 150, crop: 'crop'},
+			...POST_OPTIONS,
 		});
 		body.videoUrl = {
 			public_id: file.public_id,
@@ -168,8 +171,7 @@ const updatePost = async (req: Request, res: Response, next: NextFunction) => {
 			{$set: body},
 			{new: true},
 		)) as IPostDoc;
-		// result.images = result?.images.map((img) => prefixImgDir(img));
-		// result.videoUrl = prefixImgDir(result.videoUrl!);
+
 		return res.status(200).json(result);
 	} catch (error) {
 		deleteFiles(req.files as Express.Multer.File[]);
@@ -189,13 +191,25 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
 		const post = (await Post.findById(postId).lean()) as IPostDoc;
 		if (!post) throw new NotFoundError('Post not found!');
 
-		const result = await Post.findByIdAndDelete(postId);
-		// if (result) {
-		// 	const files = post.images.map((file) => ({
-		// 		path: path.resolve(__dirname, '..', 'uploads', 'post', file),
-		// 	}));
-		// 	deleteFiles(files as Express.Multer.File[]);
-		// }
+		if (post.videoUrl?.public_id) {
+			await deleteImage(post.videoUrl.public_id, {
+				resource_type: 'video',
+				type: post.videoUrl.access_mode,
+			});
+		}
+
+		if (post?.images.length) {
+			const files = post?.images.map(
+				async (file) =>
+					await deleteImage(file.public_id, {
+						resource_type: 'image',
+						type: file.access_mode,
+					}),
+			);
+			await Promise.all<UploadApiResponse>(files!);
+		}
+
+		await Post.findByIdAndDelete(postId);
 
 		return res.status(200).json({postId});
 	} catch (error) {

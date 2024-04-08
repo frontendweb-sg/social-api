@@ -3,6 +3,7 @@ import {
 	ResourceType,
 	ResponseCallback,
 	UploadApiOptions,
+	UploadApiResponse,
 	UploadResponseCallback,
 	v2 as cloudinary,
 } from 'cloudinary';
@@ -14,23 +15,49 @@ cloudinary.config({
 	secure: true,
 });
 
-/**
- * Upload file
- * @param filePath
- * @param options
- * @param callback
- * @returns
- */
-export const uploadFile = async (
+const DEFAULT_OPTIONS: UploadApiOptions = {
+	resource_type: 'image',
+	overwrite: true,
+	invalidate: true,
+};
+
+export const uploadImage = async (
 	filePath: string,
-	options?: UploadApiOptions,
-	callback?: UploadResponseCallback,
-) => {
-	try {
-		return await cloudinary.uploader.upload(filePath, options, callback);
-	} catch (error) {
-		throw error;
-	}
+	options = DEFAULT_OPTIONS,
+): Promise<UploadApiResponse> => {
+	return await new Promise(async (resolve, reject) => {
+		return await cloudinary.uploader.upload(
+			filePath,
+			options,
+			(error, result) => {
+				if (result && result.public_id) {
+					return resolve(result);
+				}
+				return reject(error?.message);
+			},
+		);
+	});
+};
+
+export const deleteImage = async (
+	public_id: string,
+	options: UploadApiOptions,
+): Promise<UploadApiResponse> => {
+	return await new Promise(async (resolve, reject) => {
+		return await cloudinary.uploader.destroy(
+			public_id,
+			options,
+			(error, result) => {
+				if (result && result.public_id) {
+					console.log('Result', result);
+					return resolve(result);
+				}
+
+				console.log('error', error);
+				return reject(error?.message);
+			},
+		);
+	});
 };
 
 /**

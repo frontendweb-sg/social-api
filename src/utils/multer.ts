@@ -16,7 +16,6 @@ export function multerUploader(
 	const storage = multer.diskStorage({});
 	return multer({
 		storage,
-		limits: {fileSize: 500000},
 		fileFilter,
 	});
 }
