@@ -15,7 +15,6 @@ export interface IUser {
 	role: string;
 	active: string;
 	emailVerify: boolean;
-	accessToken: string;
 }
 export interface IUserDoc extends Document<IUser>, IUser {}
 
@@ -29,7 +28,6 @@ const schema = new Schema(
 		role: {type: String, default: ERole.User, enum: ERole},
 		active: {type: Boolean, default: true},
 		emailVerify: {type: Boolean, default: false},
-		accessToken: {type: String, default: ''},
 	},
 	{
 		timestamps: true,

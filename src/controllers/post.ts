@@ -5,7 +5,7 @@ import {IPostDoc, Post} from '../models/post';
 import {BadRequestError, NotFoundError} from '../errors';
 import {prefixImgDir, slug} from '../utils';
 import {deleteFile, deleteFiles} from '../utils/uploader';
-import sharp from 'sharp';
+
 /**
  * Get all posts
  * @param req
@@ -14,9 +14,17 @@ import sharp from 'sharp';
  */
 const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const posts = (await Post.find().populate('user').sort({
-			createdAt: -1,
-		})) as IPostDoc[];
+		const posts = (await Post.find()
+			.populate('user')
+			.populate({
+				path: 'comments',
+				populate: {
+					path: 'user',
+				},
+			})
+			.sort({
+				createdAt: -1,
+			})) as IPostDoc[];
 
 		const update = posts.map((post) => ({
 			...post.toJSON(),
@@ -26,6 +34,7 @@ const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 
 		return res.status(200).json(update);
 	} catch (error) {
+		console.log('error', error);
 		next(error);
 	}
 };

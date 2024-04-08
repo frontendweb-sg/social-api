@@ -3,7 +3,6 @@ import {IUserDoc, User} from '../models/user';
 import {Password} from '../utils/password';
 import {Jwt} from '../utils/jwt';
 import {AuthError, BadRequestError, NotFoundError} from '../errors';
-import {hostPrefix, prefixImgDir} from '../utils';
 
 /**
  * Sign in controller
@@ -27,19 +26,11 @@ const signin = async (req: Request, res: Response, next: NextFunction) => {
 		if (!verify) throw new AuthError('Invalid password!');
 
 		const token = Jwt.genToken({email: user.email, id: user._id});
-		user.accessToken = token;
 
-		const result = (await User.findByIdAndUpdate(
-			user.id,
-			{$set: {accessToken: token}},
-			{new: true},
-		)) as IUserDoc;
-
-		result.avatar = hostPrefix(result.avatar!);
 		return res.status(200).json({
 			accessToken: token,
 			expireIn: 3600,
-			user: result,
+			user: user,
 		});
 	} catch (error) {
 		next(error);

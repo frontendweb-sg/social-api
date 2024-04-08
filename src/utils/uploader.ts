@@ -2,8 +2,6 @@ import multer from 'multer';
 import {Request} from 'express';
 import type {FileFilterCallback} from 'multer';
 import fs from 'fs';
-import path from 'path';
-import sharp from 'sharp';
 
 export const uploader = (
 	dir: string,
