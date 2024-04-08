@@ -4,7 +4,7 @@ import {IPost, IPostDoc, Post} from '../models/post';
 import {BadRequestError, NotFoundError} from '../errors';
 import {slug} from '../utils';
 import {deleteFiles} from '../utils/uploader';
-import {deleteImage, deleteUploadFile, uploadImage} from '../cloudinary';
+import {deleteUploadFile, deleteImage, uploadImage} from '../cloudinary';
 import {PostFileType} from '../types';
 import {UploadApiOptions, UploadApiResponse} from 'cloudinary';
 
@@ -23,6 +23,7 @@ const getFileObj = (files: any) =>
 				videoUrl: files['videoUrl' as keyof typeof File] || [],
 			}
 		: {images: [], videoUrl: []};
+
 /**
  * Get all posts
  * @param req
@@ -37,7 +38,6 @@ const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 		const posts = (await Post.find().populate('user').sort({
 			createdAt: -1,
 		})) as IPostDoc[];
-
 		return res.status(200).json(posts);
 	} catch (error) {
 		next(error);
@@ -53,10 +53,8 @@ const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 const getPost = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const {postId} = req.params;
-
 		const post = (await Post.findById(postId).lean()) as IPostDoc;
 		if (!post) throw new NotFoundError('Post not found!');
-
 		return res.status(200).json(post);
 	} catch (error) {
 		if (error instanceof mongoose.MongooseError) {
@@ -84,7 +82,32 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 		);
 		const response = await Promise.all<UploadApiResponse>(allImages);
 		for (let file of response) {
-			images.push({
+			for (let image of files.images) {
+				const file = await uploadImage(image.path, {
+					resource_type: 'image',
+					folder: 'post',
+					transformation: {width: 450, height: 250, crop: 'crop'},
+				});
+				images.push({
+					public_id: file.public_id,
+					url: file.secure_url,
+					resource_type: file.resource_type,
+					access_mode: file.access_mode,
+					folder: file.folder,
+					signature: file.signature,
+					version: file.version.toString(),
+				});
+			}
+		}
+
+		if (files.videoUrl.length) {
+			const video = files.videoUrl[0];
+			const file = await uploadImage(video.path, {
+				resource_type: 'video',
+				...POST_OPTIONS,
+			});
+
+			body.videoUrl = {
 				public_id: file.public_id,
 				url: file.secure_url,
 				resource_type: file.resource_type,
@@ -92,50 +115,32 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 				folder: file.folder,
 				signature: file.signature,
 				version: file.version.toString(),
-			});
-		}
-	}
-
-	if (files.videoUrl.length) {
-		const video = files.videoUrl[0];
-		const file = await uploadImage(video.path, {
-			resource_type: 'video',
-			...POST_OPTIONS,
-		});
-		body.videoUrl = {
-			public_id: file.public_id,
-			url: file.secure_url,
-			resource_type: file.resource_type,
-			access_mode: file.access_mode,
-			folder: file.folder,
-			signature: file.signature,
-			version: file.version.toString(),
-		};
-	}
-
-	body.images = images;
-	try {
-		const newPost = new Post(body);
-		const result = await newPost.save();
-		return res.status(201).json(result);
-	} catch (error) {
-		if (req.files !== undefined) {
-			for (let image of body.images) {
-				await deleteUploadFile(image?.public_id, {
-					resource_type: image.resource_type,
-					type: image.access_mode,
-				});
-			}
-
-			if (body.videoUrl) {
-				await deleteUploadFile(body.videoUrl?.public_id, {
-					resource_type: body.videoUrl.resource_type,
-					type: body.videoUrl.access_mode,
-				});
-			}
+			};
 		}
 
-		next(error);
+		body.images = images;
+		try {
+			const newPost = new Post(body);
+			const result = await newPost.save();
+			return res.status(201).json(result);
+		} catch (error) {
+			if (req.files !== undefined) {
+				for (let image of body.images) {
+					await deleteUploadFile(image?.public_id, {
+						resource_type: image.resource_type,
+						type: image.access_mode,
+					});
+				}
+
+				if (body.videoUrl) {
+					await deleteUploadFile(body.videoUrl?.public_id, {
+						resource_type: body.videoUrl.resource_type,
+						type: body.videoUrl.access_mode,
+					});
+				}
+			}
+			next(error);
+		}
 	}
 };
 
@@ -148,33 +153,20 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 const updatePost = async (req: Request, res: Response, next: NextFunction) => {
 	try {
 		const {postId} = req.params;
-		const status = req.query.status;
-
-		if (status) {
-		}
+		const user = req.user;
+		const body = req.body;
+		body.user = user?.id;
 
 		const post = (await Post.findById(postId).lean()) as IPostDoc;
 		if (!post) throw new NotFoundError('Post not found!');
-
-		const user = req.user;
-		const body = req.body;
-		body.slug = slug(body.title);
-		body.user = user?.id;
-
-		const files = req.files as Express.Multer.File[];
-		if (files.length) {
-			body.images = files.map((file) => file.filename);
-		}
 
 		const result = (await Post.findByIdAndUpdate(
 			postId,
 			{$set: body},
 			{new: true},
 		)) as IPostDoc;
-
 		return res.status(200).json(result);
 	} catch (error) {
-		deleteFiles(req.files as Express.Multer.File[]);
 		next(error);
 	}
 };
@@ -211,12 +203,28 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
 
 		await Post.findByIdAndDelete(postId);
 
+		const result = await Post.findByIdAndDelete(postId);
+
+		if (result) {
+			for (let image of post.images) {
+				await deleteUploadFile(image?.public_id, {
+					resource_type: image.resource_type,
+					type: image.access_mode,
+				});
+			}
+
+			if (post.videoUrl) {
+				await deleteUploadFile(post.videoUrl?.public_id, {
+					resource_type: post.videoUrl.resource_type,
+					type: post.videoUrl.access_mode,
+				});
+			}
+		}
 		return res.status(200).json({postId});
 	} catch (error) {
+		console.log('e', error);
 		next(error);
 	}
 };
-
-const postActiveInactive = (status: string) => {};
 
 export {getPost, getPosts, addPost, updatePost, deletePost};
