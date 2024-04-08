@@ -96,11 +96,12 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 		}
 
 		const newPost = new Post(body);
-		const result = await newPost.save();
+		const result = await newPost.save().then((res) => res.populate('user'));
 
 		result.images = result.images.map((img) => prefixImgDir(img));
 		result.videoUrl = prefixImgDir(result.videoUrl!);
-		return res.status(201).json(body);
+
+		return res.status(201).json(result);
 	} catch (error) {
 		if (req.files !== undefined) {
 			deleteFiles(req.files['images' as keyof typeof req.file]);
@@ -141,7 +142,15 @@ const updatePost = async (req: Request, res: Response, next: NextFunction) => {
 			postId,
 			{$set: body},
 			{new: true},
-		)) as IPostDoc;
+		)
+			.populate('user')
+			.populate({
+				path: 'comments',
+				populate: {
+					path: 'user',
+				},
+			})) as IPostDoc;
+
 		result.images = result?.images.map((img) => prefixImgDir(img));
 		result.videoUrl = prefixImgDir(result.videoUrl!);
 		return res.status(200).json(result);
@@ -176,7 +185,5 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
 		next(error);
 	}
 };
-
-const postActiveInactive = (status: string) => {};
 
 export {getPost, getPosts, addPost, updatePost, deletePost};
