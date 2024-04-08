@@ -1,5 +1,6 @@
 import mongoose, {Schema, Document} from 'mongoose';
 import {Password} from '../utils/password';
+import {Media} from '../types';
 
 export const USER_TABLE = 'user';
 export enum ERole {
@@ -11,7 +12,7 @@ export interface IUser {
 	email: string;
 	password: string;
 	mobile: string;
-	avatar: string;
+	avatar: Media;
 	role: string;
 	active: string;
 	emailVerify: boolean;
@@ -24,7 +25,15 @@ const schema = new Schema(
 		email: {type: String, unique: true, required: true, trim: true},
 		password: {type: String, required: true, trim: true},
 		mobile: {type: String, required: true, trim: true},
-		avatar: {type: String, default: ''},
+		avatar: {
+			public_id: {type: String, default: null},
+			url: {type: String, default: ''},
+			resource_type: {type: String, default: ''},
+			access_mode: {type: String, default: ''},
+			folder: {type: String, default: ''},
+			signature: {type: String, default: ''},
+			version: {type: String, default: ''},
+		},
 		role: {type: String, default: ERole.User, enum: ERole},
 		active: {type: Boolean, default: true},
 		emailVerify: {type: Boolean, default: false},

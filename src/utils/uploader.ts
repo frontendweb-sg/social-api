@@ -51,3 +51,17 @@ export const deleteFiles = (files: Express.Multer.File[]) => {
 		}
 	}
 };
+
+export const multerUploader = (
+	fileFilter?: (
+		req: Request,
+		file: Express.Multer.File,
+		callback: FileFilterCallback,
+	) => void,
+) => {
+	const storage = multer.diskStorage({});
+	return multer({
+		storage,
+		fileFilter,
+	});
+};
