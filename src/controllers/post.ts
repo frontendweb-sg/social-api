@@ -83,7 +83,7 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 
 	const files: PostFileType = getFileObj(req.files);
 	let images = [];
-	console.log('files', files.images);
+
 	if (files.images.length) {
 		const allImages = files.images.map((image) =>
 			uploadImage(image.path, POST_OPTIONS),
@@ -122,7 +122,7 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 		};
 	}
 
-	console.log('body', body);
+	body.images = images;
 	try {
 		const newPost = new Post(body);
 		const result = await newPost.save().then((res) => res.populate('user'));

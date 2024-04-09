@@ -25,7 +25,6 @@ export const uploadImage = async (
 	filePath: string,
 	options = DEFAULT_OPTIONS,
 ): Promise<UploadApiResponse> => {
-	console.log('file-path', filePath);
 	return await new Promise(async (resolve, reject) => {
 		return await cloudinary.uploader.upload(
 			filePath,
