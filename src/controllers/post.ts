@@ -1,4 +1,3 @@
-import path from 'path';
 import mongoose from 'mongoose';
 import {Request, Response, NextFunction} from 'express';
 import {IPost, IPostDoc, Post} from '../models/post';
