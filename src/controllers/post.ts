@@ -5,7 +5,7 @@ import {IPostDoc, Post} from '../models/post';
 import {BadRequestError, NotFoundError} from '../errors';
 import {prefixImgDir, slug} from '../utils';
 import {deleteFile, deleteFiles} from '../utils/uploader';
-import sharp from 'sharp';
+
 /**
  * Get all posts
  * @param req
@@ -14,9 +14,17 @@ import sharp from 'sharp';
  */
 const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 	try {
-		const posts = (await Post.find().populate('user').sort({
-			createdAt: -1,
-		})) as IPostDoc[];
+		const posts = (await Post.find()
+			.populate('user')
+			.populate({
+				path: 'comments',
+				populate: {
+					path: 'user',
+				},
+			})
+			.sort({
+				createdAt: -1,
+			})) as IPostDoc[];
 
 		const update = posts.map((post) => ({
 			...post.toJSON(),
@@ -26,6 +34,7 @@ const getPosts = async (req: Request, res: Response, next: NextFunction) => {
 
 		return res.status(200).json(update);
 	} catch (error) {
+		console.log('error', error);
 		next(error);
 	}
 };
@@ -87,11 +96,12 @@ const addPost = async (req: Request, res: Response, next: NextFunction) => {
 		}
 
 		const newPost = new Post(body);
-		const result = await newPost.save();
+		const result = await newPost.save().then((res) => res.populate('user'));
 
 		result.images = result.images.map((img) => prefixImgDir(img));
 		result.videoUrl = prefixImgDir(result.videoUrl!);
-		return res.status(201).json(body);
+
+		return res.status(201).json(result);
 	} catch (error) {
 		if (req.files !== undefined) {
 			deleteFiles(req.files['images' as keyof typeof req.file]);
@@ -132,7 +142,15 @@ const updatePost = async (req: Request, res: Response, next: NextFunction) => {
 			postId,
 			{$set: body},
 			{new: true},
-		)) as IPostDoc;
+		)
+			.populate('user')
+			.populate({
+				path: 'comments',
+				populate: {
+					path: 'user',
+				},
+			})) as IPostDoc;
+
 		result.images = result?.images.map((img) => prefixImgDir(img));
 		result.videoUrl = prefixImgDir(result.videoUrl!);
 		return res.status(200).json(result);
@@ -167,7 +185,5 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
 		next(error);
 	}
 };
-
-const postActiveInactive = (status: string) => {};
 
 export {getPost, getPosts, addPost, updatePost, deletePost};

@@ -47,7 +47,15 @@ export const addComment = async (
 				},
 			},
 			{new: true},
-		);
+		)
+			.populate('user')
+			.populate({
+				path: 'comments',
+				populate: {
+					path: 'user',
+				},
+			});
+
 		return res.status(201).json(result?.comments);
 	} catch (error) {
 		if (req.files?.length) {
