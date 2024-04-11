@@ -1,47 +1,98 @@
-import {NextFunction, Request, Response} from 'express';
-import {IUser, User} from '../models/user';
-import {prefixImgDir} from '../utils';
-import {deleteFile} from '../utils/uploader';
-import {Post} from '../models/post';
+import {Request, Response, NextFunction} from 'express';
+import {IProfileDoc, Profile} from '../models/profile';
+import {BadRequestError} from '../errors';
 
-/**
- * Get logged in user
- * @param req
- * @param res
- * @param next
- */
-export const getLoggedInUser = async (
+export const getProfile = async (
 	req: Request,
 	res: Response,
 	next: NextFunction,
 ) => {
 	try {
 		const user = req.user?.id;
-		const result = await User.findById(user);
-		return res
-			.status(200)
-			.send({avatar: prefixImgDir(result?.avatar!, 'avatar')});
-	} catch (error) {
-		next(error);
-	}
+		const profile = (await Profile.findOne({user})) as IProfileDoc;
+
+		return res.status(200).json(profile);
+	} catch (error) {}
 };
 
 /**
- * Get logged in user posts
+ * Create user profile
  * @param req
  * @param res
  * @param next
  * @returns
  */
-export const getLoggedInUserPosts = async (
+export const addProfile = async (
 	req: Request,
 	res: Response,
 	next: NextFunction,
 ) => {
 	try {
 		const user = req.user?.id;
-		const posts = await Post.find({user});
-		return res.status(200).json(posts);
+		const body = req.body;
+		body.user = user;
+
+		const profile = await Profile.findOne({
+			user,
+		});
+
+		if (profile) {
+			throw new BadRequestError('Profile already existed, please update');
+		}
+
+		const newProfile = new Profile(body);
+		const result = await newProfile.save();
+		return res.status(201).json(result);
+	} catch (error) {
+		console.log('E', error);
+		next(error);
+	}
+};
+
+/**
+ * Update user profile
+ * @param req
+ * @param res
+ * @param next
+ * @returns
+ */
+export const updateProfile = async (
+	req: Request,
+	res: Response,
+	next: NextFunction,
+) => {
+	try {
+		const user = req.user?.id;
+		const profileId = req.params.profileId;
+		const body = req.body;
+
+		const profile = await Profile.findOne({
+			user,
+		});
+
+		if (!profile)
+			throw new BadRequestError('Profile not existed!, pelase create');
+
+		const result = await Profile.findOneAndUpdate(
+			{user, _id: profileId},
+			{$set: body},
+			{new: true},
+		);
+		return res.status(200).json(result);
+	} catch (error) {
+		next(error);
+	}
+};
+
+export const getGithubProfile = async (
+	req: Request,
+	res: Response,
+	next: NextFunction,
+) => {
+	try {
+		const user = req.user?.id;
+		const profileId = req.params.profileId;
+		const body = req.body;
 	} catch (error) {
 		next(error);
 	}

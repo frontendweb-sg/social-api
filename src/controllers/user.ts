@@ -3,6 +3,7 @@ import {IUser, User} from '../models/user';
 import {deleteFile} from '../utils/uploader';
 import {deleteImage, deleteUploadFile, uploadImage} from '../cludinary';
 import {NotFoundError} from '../errors';
+import {Post} from '../models/post';
 
 /**
  * Logged in user
@@ -86,6 +87,31 @@ export const updateAvatar = async (
 			});
 		}
 
+		next(error);
+	}
+};
+
+export const loggedInUserPost = async (
+	req: Request,
+	res: Response,
+	next: NextFunction,
+) => {
+	try {
+		const user = req.user?.id;
+		const posts = await Post.find({user})
+			.populate('user')
+			.populate({
+				path: 'comments',
+				populate: {
+					path: 'user',
+				},
+			})
+			.sort({
+				createdAt: -1,
+			});
+
+		return res.status(200).json(posts);
+	} catch (error) {
 		next(error);
 	}
 };
